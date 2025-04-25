@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Вход</h2>
+
+<div id="message"></div>
+
+<form id="loginForm" class="card p-4 shadow-sm bg-white">
+  <div class="mb-3">
+    <input name="login" id="loginField" class="form-control" placeholder="Логин или Email">
+    <small id="loginFieldError" class="text-danger d-none">Поле обязательно для заполнения</small>
+  </div>
+  <div class="mb-3">
+    <input name="password" type="password" id="passwordField" class="form-control" placeholder="Пароль">
+    <small id="passwordFieldError" class="text-danger d-none">Поле обязательно для заполнения</small>
+  </div>
+  <button id="add-btn" type="submit" class="btn btn-sm btn-primary">Войти</button>
+</form>
+
+<script>
+  if (localStorage.getItem('token')) {
+    document.getElementById('message').innerHTML = `
+      <div class="alert alert-info">Вы уже авторизованы!</div>
+      <a href="/users-page" class="btn btn-sm btn-primary">Перейти к пользователям</a>
+    `;
+    document.getElementById('loginForm').style.display = 'none';
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    const login = document.getElementById('loginField');
+    const password = document.getElementById('passwordField');
+    const loginError = document.getElementById('loginFieldError');
+    const passwordError = document.getElementById('passwordFieldError');
+    const messageBox = document.getElementById('message');
+
+    let valid = true;
+
+    if (!login.value.trim()) {
+      loginError.classList.remove('d-none');
+      valid = false;
+    } else {
+      loginError.classList.add('d-none');
+    }
+
+    if (!password.value.trim()) {
+      passwordError.classList.remove('d-none');
+      valid = false;
+    } else {
+      passwordError.classList.add('d-none');
+    }
+
+    if (!valid) return;
+
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login: login.value, password: password.value })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('token', data.token);
+      window.location.href = '/users-page';
+    } else {
+      const error = await res.json();
+      messageBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    }
+  });
+
+  // Скрываем ошибку при вводе
+  ['loginField', 'passwordField'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById(id + 'Error').classList.add('d-none');
+    });
+  });
+</script>
+{% endblock %}

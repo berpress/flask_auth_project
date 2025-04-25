@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Пользователи{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Список пользователей</h2>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+
+<table id="userTable" class="table table-bordered table-striped table-hover shadow-sm bg-white">
+  <thead class="table-light">
+    <tr>
+      <th>Имя</th>
+      <th>Возраст</th>
+      <th>Пол</th>
+      <th>Дата рождения</th>
+      <th>Активен</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+async function loadUsers() {
+  const token = localStorage.getItem('token');
+  if (!token) return window.location.href = '/login';
+
+  const res = await fetch('/api/users', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+
+  const errorBox = document.getElementById('errorBox');
+  const tableBody = document.querySelector('#userTable tbody');
+
+  if (res.ok) {
+    const users = await res.json();
+    tableBody.innerHTML = '';
+
+    if (users.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Нет пользователей</td></tr>';
+    } else {
+      users.forEach(u => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${u.name}</td>
+          <td>${u.age}</td>
+          <td>${u.gender || '-'}</td>
+          <td>${u.date_registration || '-'}</td>
+          <td>${u.is_active ? 'Да' : 'Нет'}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+  } else {
+    const err = await res.json();
+    errorBox.textContent = err.message || 'Ошибка авторизации';
+    errorBox.classList.remove('d-none');
+    localStorage.removeItem('token');
+    setTimeout(() => window.location.href = '/login', 2000);
+  }
+}
+
+loadUsers();
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Добавить пользователя{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Добавление пользователя</h2>
+
+<div id="messageContainer"></div>
+
+<form id="addUserForm" class="card p-4 shadow-sm bg-white">
+  <div class="mb-2">
+    <input id="name" name="name" class="form-control" placeholder="Имя">
+    <small id="nameError" class="text-danger d-none">Поле обязательно</small>
+  </div>
+  <div class="mb-2">
+    <input id="age" name="age" type="number" class="form-control" placeholder="Возраст">
+    <small id="ageError" class="text-danger d-none">Поле обязательно</small>
+  </div>
+  <div class="mb-2">
+    <input id="gender" name="gender" class="form-control" placeholder="Пол (необязательно)">
+  </div>
+  <div class="mb-2">
+    <input id="date_birthday" name="date_birthday" type="date" class="form-control">
+  </div>
+  <div class="form-check mb-2">
+    <input id="isActive" name="is_active" type="checkbox" class="form-check-input">
+    <label for="isActive" class="form-check-label">Активен</label>
+  </div>
+  <button id="add-btn" type="submit" class="btn btn-sm btn-success">Сохранить</button>
+  <a href="/users-page" class="btn btn-sm btn-outline-primary mt-3">Перейти к таблице пользователей</a>
+</form>
+
+<script>
+document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const messageContainer = document.getElementById('messageContainer');
+  messageContainer.innerHTML = '';
+
+  const nameInput = document.getElementById('name');
+  const ageInput = document.getElementById('age');
+  const nameError = document.getElementById('nameError');
+  const ageError = document.getElementById('ageError');
+
+  let isValid = true;
+
+  // Скрываем старые ошибки
+  nameError.classList.add('d-none');
+  ageError.classList.add('d-none');
+
+  if (!nameInput.value.trim()) {
+    nameError.classList.remove('d-none');
+    isValid = false;
+  }
+
+  if (!ageInput.value.trim()) {
+    ageError.classList.remove('d-none');
+    isValid = false;
+  }
+
+  if (!isValid) return;
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    messageContainer.innerHTML = `<div class="alert alert-warning">Вы не авторизованы. Пожалуйста, войдите в систему.</div>`;
+    return;
+  }
+
+  const form = e.target;
+
+  const data = {
+    name: nameInput.value.trim(),
+    age: parseInt(ageInput.value),
+    gender: form.gender.value.trim() || null,  // Если пустое, отправляем null
+    date_registration: form.date_birthday.value || null,
+    is_active: form.is_active.checked
+  };
+
+  try {
+    const res = await fetch('/api/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      messageContainer.innerHTML = `<div class="alert alert-success">Пользователь успешно добавлен!</div>`;
+      form.reset();
+    } else {
+      messageContainer.innerHTML = `<div class="alert alert-danger">${result.message || 'Ошибка при добавлении пользователя'}</div>`;
+    }
+  } catch (err) {
+    messageContainer.innerHTML = `<div class="alert alert-danger">Произошла ошибка при отправке данных.</div>`;
+  }
+});
+
+// Убираем ошибки при вводе
+['name', 'age'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    document.getElementById(id + 'Error').classList.add('d-none');
+  });
+});
+</script>
+{% endblock %}
